@@ -21,6 +21,8 @@ var RoomKeys = &RoomKeysType{
 
 var saveInLocal = true
 
+var rtmpNoAuth = Config.GetBool("rtmp_noauth")
+
 func Init() {
 	saveInLocal = len(Config.GetString("redis_addr")) == 0
 	if saveInLocal {
@@ -45,7 +47,9 @@ func Init() {
 func (r *RoomKeysType) SetKey(channel string) (key string, err error) {
 	if !saveInLocal {
 		for {
-			key = uid.RandStringRunes(48)
+			if !rtmpNoAuth {
+				key = uid.RandStringRunes(48)
+			}
 			if _, err = r.redisCli.Get(key).Result(); err == redis.Nil {
 				err = r.redisCli.Set(channel, key, 0).Err()
 				if err != nil {
@@ -61,7 +65,9 @@ func (r *RoomKeysType) SetKey(channel string) (key string, err error) {
 	}
 
 	for {
-		key = uid.RandStringRunes(48)
+		if !rtmpNoAuth {
+			key = uid.RandStringRunes(48)
+		}
 		if _, found := r.localCache.Get(key); !found {
 			r.localCache.SetDefault(channel, key)
 			r.localCache.SetDefault(key, channel)
